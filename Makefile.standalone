@@ -1,0 +1,286 @@
+# Makefile.standalone
+# Replicates the build configuration of pcsx_rearmed_libretro.so
+# Allows replacing the interface implementation.
+
+TARGET = libps1.so
+
+.PHONY: lib
+lib: $(TARGET)
+
+# Compiler and Linker
+# CC = cc
+LD = $(CC)
+
+override CFLAGS  = '-DGIT_VERSION=" a2640fe1"'
+override CFLAGS += -fPIC
+
+override CFLAGS += -Wall -Iinclude -ffast-math -O3 -DNDEBUG
+override CFLAGS += -ffunction-sections -fdata-sections
+override CFLAGS += -DP_HAVE_MMAP=1 -DP_HAVE_PTHREAD=1 -DP_HAVE_POSIX_MEMALIGN=1 -DDISABLE_MEM_LUTS=0
+override CFLAGS += -Ideps/libchdr/deps/zlib-1.3.1
+override CFLAGS += -Ideps/lightning/include -Ideps/lightrec -Iinclude/lightning -Iinclude/lightrec -Iinclude
+ifneq (,$(findstring aarch64-linux,$(CC)))
+	# arm64
+	override CFLAGS += -DDYNAREC=ari64
+	override CFLAGS += -Inew_dynarec/
+	SRCS_DYNAREC = \
+	  libpcsxcore/new_dynarec/new_dynarec.c \
+      libpcsxcore/new_dynarec/emu_if.c \
+	  libpcsxcore/new_dynarec/pcsxmem.c
+	override SRCS_ASM += libpcsxcore/new_dynarec/linkage_arm64.S
+   	# libpcsxcore/new_dynarec/assem_arm64.c \ included from new_dynarec
+else ifneq (,$(findstring armv7,$(CC)))
+	# older arm
+	override CFLAGS += -DDYNAREC=ari64
+	override CFLAGS += -Inew_dynarec/
+	SRCS_DYNAREC = \
+	  libpcsxcore/new_dynarec/new_dynarec.c \
+      libpcsxcore/new_dynarec/emu_if.c \
+	  libpcsxcore/new_dynarec/pcsxmem.c
+	override SRCS_ASM += libpcsxcore/new_dynarec/linkage_arm.S
+	# libpcsxcore/new_dynarec/assem_arm.c \
+	  libpcsxcore/new_dynarec/linkage_arm.S
+else
+	# default to x86
+	override CFLAGS += -DLIGHTREC -DLIGHTREC_STATIC -DLIGHTREC_CUSTOM_MAP=1 -DLIGHTREC_CODE_INV=0
+	override CFLAGS += -DLIGHTREC_ENABLE_THREADED_COMPILER=0 -DLIGHTREC_ENABLE_DISASSEMBLER=0 -DLIGHTREC_NO_DEBUG=1
+	# Dynarec (Lightrec)
+	SRCS_DYNAREC = \
+		libpcsxcore/lightrec/mem.c \
+		libpcsxcore/lightrec/plugin.c \
+		libpcsxcore/new_dynarec/emu_if.c \
+		deps/lightrec/tlsf/tlsf.c \
+		deps/lightrec/blockcache.c \
+		deps/lightrec/constprop.c \
+		deps/lightrec/disassembler.c \
+		deps/lightrec/emitter.c \
+		deps/lightrec/interpreter.c \
+		deps/lightrec/lightrec.c \
+		deps/lightrec/memmanager.c \
+		deps/lightrec/optimizer.c \
+		deps/lightrec/regcache.c \
+		deps/lightning/lib/jit_disasm.c \
+		deps/lightning/lib/jit_memory.c \
+		deps/lightning/lib/jit_names.c \
+		deps/lightning/lib/jit_note.c \
+		deps/lightning/lib/jit_print.c \
+		deps/lightning/lib/jit_size.c \
+		deps/lightning/lib/lightning.c
+endif
+override CFLAGS += -DGPU_NEON -DHAVE_CHD -Ideps/libchdr/include
+override CFLAGS += -DHAVE_CDROM -DHAVE_LIBRETRO -Ideps/libretro-common/include
+override CFLAGS += -DNO_FRONTEND
+override CFLAGS += -DUSE_ASYNC_GPU -DUSE_ASYNC_CDROM
+override CFLAGS += -DBUILTIN_GPU=neon
+override CFLAGS += -DNEON_BUILD -DTEXTURE_CACHE_4BPP -DTEXTURE_CACHE_8BPP -DSIMD_BUILD
+override CFLAGS += -DHAVE_RTHREADS
+
+CFLAGS_LIBPS1 = -Werror=missing-field-initializers
+
+CFLAGS_ZLIB = -Wno-unused -Wno-unused-function -DHAVE_UNISTD_H
+CFLAGS_CHDR = -Wno-unused -Wno-unused-function -Wno-unused -Wno-maybe-uninitialized -std=gnu11 -Ideps/libchdr/deps/lzma-24.05/include -Ideps/libchdr/deps/zstd-1.5.6/lib
+CFLAGS_ZSTD = -Wno-unused -Wno-unused-function -Ideps/libchdr/deps/zstd-1.5.6/lib
+CFLAGS_LZMA = -Wno-unused -Wno-unused-function -Wno-unused -DZ7_ST -Ideps/libchdr/deps/lzma-24.05/include
+CFLAGS_LIGHTNING = -Wno-unused -Wno-unused-function -Wno-uninitialized -DHAVE_MMAP=P_HAVE_MMAP
+CFLAGS_GTE_NF = -DFLAGLESS
+
+# Linker Flags
+# Removed -Wl,-version-script and -fvisibility=hidden to allow EXPOSE to work
+LDFLAGS = -shared -Wl,--gc-sections
+
+ifneq (,$(findstring android,$(CC)))
+# no need to include pthread, rt for android
+LDLIBS  = -lm -ldl
+else
+LDLIBS  = -lpthread -lm -ldl -lrt
+endif
+
+# -----------------------------------------------------------------------------
+# Source Files
+# -----------------------------------------------------------------------------
+
+# Core PCSX Sources
+SRCS_CORE = \
+	libpcsxcore/cdriso.c \
+	libpcsxcore/cdrom.c \
+	libpcsxcore/cdrom-async.c \
+	libpcsxcore/cheat.c \
+	libpcsxcore/database.c \
+	libpcsxcore/decode_xa.c \
+	libpcsxcore/mdec.c \
+	libpcsxcore/misc.c \
+	libpcsxcore/plugins.c \
+	libpcsxcore/ppf.c \
+	libpcsxcore/psxbios.c \
+	libpcsxcore/psxcommon.c \
+	libpcsxcore/psxcounters.c \
+	libpcsxcore/psxdma.c \
+	libpcsxcore/psxhw.c \
+	libpcsxcore/psxinterpreter.c \
+	libpcsxcore/psxmem.c \
+	libpcsxcore/psxevents.c \
+	libpcsxcore/r3000a.c \
+	libpcsxcore/sio.c \
+	libpcsxcore/spu.c \
+	libpcsxcore/gpu.c \
+	libpcsxcore/gte.c \
+	libpcsxcore/gte_divider.c \
+	libpcsxcore/gte_nf.c
+
+# Frontend Support (Shared)
+SRCS_FRONTEND_COMMON = \
+	frontend/main.c \
+	frontend/plugin.c \
+	frontend/cspace.c \
+	frontend/pcsxr-threads.c
+
+
+# SPU (DFSound)
+SRCS_SPU = \
+	plugins/dfsound/dma.c \
+	plugins/dfsound/freeze.c \
+	plugins/dfsound/registers.c \
+	plugins/dfsound/spu.c \
+	plugins/dfsound/out.c \
+	plugins/dfsound/nullsnd.c
+
+# GPU (Neon/Simd + Gpulib)
+SRCS_GPU = \
+	plugins/gpulib/gpu.c \
+	plugins/gpulib/vout_pl.c \
+	plugins/gpulib/prim.c \
+	plugins/gpulib/gpu_async.c \
+	plugins/gpu_neon/psx_gpu_if.c \
+	plugins/gpu_neon/psx_gpu/psx_gpu_simd.c
+
+# Dependencies: ZLIB
+SRCS_ZLIB = \
+	deps/libchdr/deps/zlib-1.3.1/adler32.c \
+	deps/libchdr/deps/zlib-1.3.1/compress.c \
+	deps/libchdr/deps/zlib-1.3.1/crc32.c \
+	deps/libchdr/deps/zlib-1.3.1/deflate.c \
+	deps/libchdr/deps/zlib-1.3.1/gzclose.c \
+	deps/libchdr/deps/zlib-1.3.1/gzlib.c \
+	deps/libchdr/deps/zlib-1.3.1/gzread.c \
+	deps/libchdr/deps/zlib-1.3.1/gzwrite.c \
+	deps/libchdr/deps/zlib-1.3.1/infback.c \
+	deps/libchdr/deps/zlib-1.3.1/inffast.c \
+	deps/libchdr/deps/zlib-1.3.1/inflate.c \
+	deps/libchdr/deps/zlib-1.3.1/inftrees.c \
+	deps/libchdr/deps/zlib-1.3.1/trees.c \
+	deps/libchdr/deps/zlib-1.3.1/uncompr.c \
+	deps/libchdr/deps/zlib-1.3.1/zutil.c
+
+# Dependencies: CHDR (includes LZMA, ZSTD)
+SRCS_CHDR = \
+	deps/libchdr/deps/lzma-24.05/src/Alloc.c \
+	deps/libchdr/deps/lzma-24.05/src/CpuArch.c \
+	deps/libchdr/deps/lzma-24.05/src/Delta.c \
+	deps/libchdr/deps/lzma-24.05/src/LzFind.c \
+	deps/libchdr/deps/lzma-24.05/src/LzmaDec.c \
+	deps/libchdr/deps/lzma-24.05/src/LzmaEnc.c \
+	deps/libchdr/deps/lzma-24.05/src/Sort.c \
+	deps/libchdr/deps/zstd-1.5.6/lib/common/entropy_common.c \
+	deps/libchdr/deps/zstd-1.5.6/lib/common/error_private.c \
+	deps/libchdr/deps/zstd-1.5.6/lib/common/fse_decompress.c \
+	deps/libchdr/deps/zstd-1.5.6/lib/common/xxhash.c \
+	deps/libchdr/deps/zstd-1.5.6/lib/common/zstd_common.c \
+	deps/libchdr/deps/zstd-1.5.6/lib/decompress/huf_decompress.c \
+	deps/libchdr/deps/zstd-1.5.6/lib/decompress/zstd_ddict.c \
+	deps/libchdr/deps/zstd-1.5.6/lib/decompress/zstd_decompress_block.c \
+	deps/libchdr/deps/zstd-1.5.6/lib/decompress/zstd_decompress.c \
+	deps/libchdr/src/libchdr_bitstream.c \
+	deps/libchdr/src/libchdr_cdrom.c \
+	deps/libchdr/src/libchdr_chd.c \
+	deps/libchdr/src/libchdr_flac.c \
+	deps/libchdr/src/libchdr_huffman.c
+
+override SRCS_ASM += \
+	deps/libchdr/deps/zstd-1.5.6/lib/decompress/huf_decompress_amd64.S
+
+# Dependencies: Libretro Common
+SRCS_LIBRETRO_COMMON = \
+	deps/libretro-common/compat/compat_strl.c \
+	deps/libretro-common/file/file_path.c \
+	deps/libretro-common/string/stdstring.c \
+	deps/libretro-common/vfs/vfs_implementation.c \
+	deps/libretro-common/lists/string_list.c \
+	deps/libretro-common/memmap/memalign.c \
+	deps/libretro-common/vfs/vfs_implementation_cdrom.c \
+	deps/libretro-common/features/features_cpu.c \
+	deps/libretro-common/time/rtime.c \
+	deps/libretro-common/encodings/encoding_utf.c \
+	deps/libretro-common/compat/compat_strcasestr.c \
+	deps/libretro-common/streams/file_stream.c \
+	deps/libretro-common/lists/dir_list.c \
+	deps/libretro-common/file/retro_dirent.c
+
+SRCS_INTERFACE = \
+	frontend/libretro-cdrom.c \
+	libps1.c
+
+# Combined Sources
+SRCS = $(SRCS_CORE) $(SRCS_FRONTEND_COMMON) $(SRCS_DYNAREC) $(SRCS_SPU) $(SRCS_GPU) \
+       $(SRCS_ZLIB) $(SRCS_CHDR) $(SRCS_LIBRETRO_COMMON) $(SRCS_INTERFACE)
+
+OBJS = $(SRCS:.c=.o) $(SRCS_ASM:.S=.o)
+
+# -----------------------------------------------------------------------------
+# Rules
+# -----------------------------------------------------------------------------
+
+all: $(TARGET) main
+
+$(TARGET): $(OBJS) corelib.h
+	$(LD) -o $@ -shared -fPIC $(OBJS) $(LDFLAGS) $(LDLIBS)
+	cp $(TARGET) libapu.so
+
+main: $(TARGET) main.c corelib.h
+	$(CC) main.c -L. -lps1 -Wl,-rpath=. $(shell pkg-config --cflags --libs sdl2) -o main
+
+# Generic Rule
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+%.o: %.S
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# Specific Overrides
+
+libpcsxcore/gte_nf.o: libpcsxcore/gte.c
+	$(CC) $(CFLAGS) $(CFLAGS_GTE_NF) -c $< -o $@
+
+deps/libchdr/deps/zlib-1.3.1/%.o: deps/libchdr/deps/zlib-1.3.1/%.c
+	$(CC) $(CFLAGS) $(CFLAGS_ZLIB) -c $< -o $@
+
+deps/libchdr/src/%.o: deps/libchdr/src/%.c
+	$(CC) $(CFLAGS) $(CFLAGS_CHDR) -c $< -o $@
+
+deps/libchdr/deps/lzma-24.05/src/%.o: deps/libchdr/deps/lzma-24.05/src/%.c
+	$(CC) $(CFLAGS) $(CFLAGS_LZMA) -c $< -o $@
+
+deps/libchdr/deps/zstd-1.5.6/lib/%.o: deps/libchdr/deps/zstd-1.5.6/lib/%.c
+	$(CC) $(CFLAGS) $(CFLAGS_ZSTD) -c $< -o $@
+
+deps/lightning/lib/%.o: deps/lightning/lib/%.c
+	$(CC) $(CFLAGS) $(CFLAGS_LIGHTNING) -c $< -o $@
+
+libps1.o: libps1.c
+	$(CC) $(CFLAGS) $(CFLAGS_LIBPS1) -c $< -o $@
+
+clean:
+	rm -f $(TARGET) $(OBJS) main
+	find . -name "*.o" -delete
+
+.PHONY: all clean
+
+.PHONY: gdb run runc
+gdb:
+	LD_LIBRARY_PATH=$(shell pwd) gdb --args ./main "$(ROM)"
+run:
+	LD_LIBRARY_PATH=$(shell pwd) ./main "$(ROM)"
+runc:
+	LD_LIBRARY_PATH=$(shell pwd) ./main "$(ROM)" c
+try:
+	make -f Makefile.standalone all && make -f Makefile.standalone ROM=demo.chd run
+

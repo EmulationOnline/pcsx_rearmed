@@ -36,6 +36,7 @@
 static Jit g_jit;
 #endif
 
+#include "uints.h"
 #include "new_dynarec_config.h"
 #include "../psxhle.h"
 #include "../psxinterpreter.h"

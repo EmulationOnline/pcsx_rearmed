@@ -256,6 +256,18 @@ int psxMemInit(void)
 	return 0;
 }
 
+static char biosCopied = 0;
+static uint8_t biosBytes[0x80000];
+void psxMemBiosCopy(const uint8_t* src, size_t len) {
+    biosCopied = 0;
+    if (len != sizeof(biosBytes)) {
+        printf("BIOS size mismatch. had=%x, want=%x\n", len, sizeof(biosBytes));
+        return;
+    }
+    biosCopied = 1;
+    memcpy(biosBytes, src, len);
+}
+
 void psxMemReset() {
 	FILE *f = NULL;
 	char bios[1024];
@@ -265,7 +277,11 @@ void psxMemReset() {
 
 	Config.HLE = TRUE;
 
-	if (strcmp(Config.Bios, "HLE") != 0) {
+    if (biosCopied) {
+        printf("Loading stored bios...");
+        Config.HLE = 0;
+        memcpy(psxR, biosBytes, sizeof biosBytes);
+    } else if (strcmp(Config.Bios, "HLE") != 0) {
 		sprintf(bios, "%s/%s", Config.BiosDir, Config.Bios);
 		f = fopen(bios, "rb");
 
