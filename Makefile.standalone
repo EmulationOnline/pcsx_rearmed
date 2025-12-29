@@ -1,4 +1,8 @@
-TARGET = pcsx_rearmed_libretro.so
+# Makefile.standalone
+# Replicates the build configuration of pcsx_rearmed_libretro.so
+# Allows replacing the interface implementation.
+
+TARGET = libps1.so
 
 # Compiler and Linker
 CC = cc
@@ -31,7 +35,8 @@ CFLAGS_LIGHTNING = -Wno-unused -Wno-unused-function -Wno-uninitialized -DHAVE_MM
 CFLAGS_GTE_NF = -DFLAGLESS
 
 # Linker Flags
-LDFLAGS = -shared -Wl,-version-script=frontend/libretro-version-script -Wl,--no-undefined -Wl,--gc-sections
+# Removed -Wl,-version-script and -fvisibility=hidden to allow EXPOSE to work
+LDFLAGS = -shared -Wl,--no-undefined -Wl,--gc-sections
 LDLIBS  = -lpthread -lm -ldl -lrt
 
 # -----------------------------------------------------------------------------
@@ -172,8 +177,7 @@ SRCS_LIBRETRO_COMMON = \
 
 # Interface Files (SWAP THESE FOR YOUR NEW INTERFACE)
 SRCS_INTERFACE = \
-	frontend/libretro.c \
-	frontend/libretro-cdrom.c
+	libps1.c
 
 # Combined Sources
 SRCS = $(SRCS_CORE) $(SRCS_FRONTEND_COMMON) $(SRCS_DYNAREC) $(SRCS_SPU) $(SRCS_GPU) \
@@ -185,10 +189,13 @@ OBJS = $(SRCS:.c=.o) $(SRCS_ASM:.S=.o)
 # Rules
 # -----------------------------------------------------------------------------
 
-all: $(TARGET)
+all: $(TARGET) main
 
 $(TARGET): $(OBJS)
-	$(LD) -o $@ $(OBJS) $(LDFLAGS) $(LDLIBS)
+	$(LD) -o $@ -shared -fPIC $(OBJS) $(LDFLAGS) $(LDLIBS)
+
+main: $(TARGET)
+	$(CC) main.c -L. -l:$(TARGET) -Wl,-rpath=. $(shell pkg-config --cflags --libs sdl2) -o main
 
 # Generic Rule
 %.o: %.c
@@ -218,6 +225,6 @@ deps/lightning/lib/%.o: deps/lightning/lib/%.c
 	$(CC) $(CFLAGS) $(CFLAGS_LIGHTNING) -c $< -o $@
 
 clean:
-	rm -f $(TARGET) $(OBJS)
+	rm -f $(TARGET) $(OBJS) main
 
 .PHONY: all clean
