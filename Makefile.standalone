@@ -19,9 +19,9 @@ CFLAGS += -Ideps/lightning/include -Ideps/lightrec -Iinclude/lightning -Iinclude
 CFLAGS += -DLIGHTREC -DLIGHTREC_STATIC -DLIGHTREC_CUSTOM_MAP=1 -DLIGHTREC_CODE_INV=0
 CFLAGS += -DLIGHTREC_ENABLE_THREADED_COMPILER=0 -DLIGHTREC_ENABLE_DISASSEMBLER=0 -DLIGHTREC_NO_DEBUG=1
 CFLAGS += -DGPU_NEON -DHAVE_CHD -Ideps/libchdr/include
-CFLAGS += -DHAVE_CDROM -DHAVE_LIBRETRO -Ideps/libretro-common/include
+CFLAGS += -DHAVE_LIBRETRO -Ideps/libretro-common/include
 CFLAGS += -DNO_FRONTEND
-CFLAGS += -DUSE_ASYNC_CDROM -DUSE_ASYNC_GPU
+CFLAGS += -DUSE_ASYNC_GPU
 CFLAGS += -DBUILTIN_GPU=neon
 CFLAGS += -DNEON_BUILD -DTEXTURE_CACHE_4BPP -DTEXTURE_CACHE_8BPP -DSIMD_BUILD
 CFLAGS += -DHAVE_RTHREADS
@@ -36,7 +36,7 @@ CFLAGS_GTE_NF = -DFLAGLESS
 
 # Linker Flags
 # Removed -Wl,-version-script and -fvisibility=hidden to allow EXPOSE to work
-LDFLAGS = -shared -Wl,--no-undefined -Wl,--gc-sections
+LDFLAGS = -shared -Wl,--gc-sections
 LDLIBS  = -lpthread -lm -ldl -lrt
 
 # -----------------------------------------------------------------------------
@@ -173,10 +173,17 @@ SRCS_LIBRETRO_COMMON = \
 	deps/libretro-common/lists/string_list.c \
 	deps/libretro-common/memmap/memalign.c \
 	deps/libretro-common/vfs/vfs_implementation_cdrom.c \
-	deps/libretro-common/features/features_cpu.c
+	deps/libretro-common/features/features_cpu.c \
+	deps/libretro-common/time/rtime.c \
+	deps/libretro-common/encodings/encoding_utf.c \
+	deps/libretro-common/compat/compat_strcasestr.c \
+	deps/libretro-common/streams/file_stream.c \
+	deps/libretro-common/lists/dir_list.c \
+	deps/libretro-common/file/retro_dirent.c
 
 # Interface Files (SWAP THESE FOR YOUR NEW INTERFACE)
 SRCS_INTERFACE = \
+	frontend/libretro-cdrom.c \
 	libps1.c
 
 # Combined Sources
@@ -195,7 +202,7 @@ $(TARGET): $(OBJS)
 	$(LD) -o $@ -shared -fPIC $(OBJS) $(LDFLAGS) $(LDLIBS)
 
 main: $(TARGET)
-	$(CC) main.c -L. -l:$(TARGET) -Wl,-rpath=. $(shell pkg-config --cflags --libs sdl2) -o main
+	$(CC) main.c -L. -lps1 -Wl,-rpath=. $(shell pkg-config --cflags --libs sdl2) -o main
 
 # Generic Rule
 %.o: %.c
