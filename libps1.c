@@ -100,7 +100,9 @@ void out_register_libretro(struct out_driver *drv) {
 
 // Platform/Frontend stubs
 void plat_trigger_vibrate(int port, int low, int high) {}
-void pl_frame_limit(void) {}
+void pl_frame_limit(void) {
+    psxRegs.stop++;  // stop execution.
+}
 void pl_timing_prepare(int is_pal) {}
 void pl_gun_byte2(int port, unsigned char byte) {}
 
@@ -165,8 +167,8 @@ const uint8_t *framebuffer() {
 
 EXPOSE
 void frame() {
-   // regs.stop = 0
-   psxCpu->Execute(&psxRegs);
+   psxRegs.stop = 0;
+   psxCpu->Execute(&psxRegs);  // TODO
 }
 
 EXPOSE
