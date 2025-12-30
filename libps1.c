@@ -172,7 +172,10 @@ void init(const uint8_t* data, size_t len) {
     psxCpu->ApplyConfig();
     emu_core_preinit();
     emu_core_init();
-    plugin_call_rearmed_cbs();
+
+    // Set CD image BEFORE LoadPlugins (needed by cdra_open in OpenPlugins)
+    puts("Loading cd");
+    set_cd_image("demo.chd");
 
     if (LoadPlugins() == -1) {
         puts("Failed to load plugins.");
@@ -183,12 +186,18 @@ void init(const uint8_t* data, size_t len) {
         return;
     }
 
+    if (CheckCdrom() == -1) {
+        puts("CheckCdrom failed.");
+        return;
+    }
 
-    // FIXME: load from bin
-    puts("Loading cd");
-    set_cd_image("demo.chd");
+    plugin_call_rearmed_cbs();
     SysReset();
-    LoadCdrom(); //("demo.chd");
+
+    if (LoadCdrom() == -1) {
+        puts("LoadCdrom failed.");
+        return;
+    }
     puts("Loaded cd.");
 
     // TODO: design mapping to cdrom
