@@ -99,7 +99,7 @@ void soundcard_queue(SoundCard *snd, uint8_t* data, size_t bytes) {
     SDL_PauseAudioDevice(snd->device, 0);
 }
 
-const int ROM_BUFFER_BYTES = 100*1024*1024;
+const int ROM_BUFFER_BYTES = 500*1024*1024;
 const int BYTES_PER_PIXEL=4;
 const int SCALE = 2;
 int main(int argc, char **argv) {

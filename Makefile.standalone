@@ -19,9 +19,9 @@ CFLAGS += -Ideps/lightning/include -Ideps/lightrec -Iinclude/lightning -Iinclude
 CFLAGS += -DLIGHTREC -DLIGHTREC_STATIC -DLIGHTREC_CUSTOM_MAP=1 -DLIGHTREC_CODE_INV=0
 CFLAGS += -DLIGHTREC_ENABLE_THREADED_COMPILER=0 -DLIGHTREC_ENABLE_DISASSEMBLER=0 -DLIGHTREC_NO_DEBUG=1
 CFLAGS += -DGPU_NEON -DHAVE_CHD -Ideps/libchdr/include
-CFLAGS += -DHAVE_LIBRETRO -Ideps/libretro-common/include
+CFLAGS += -DHAVE_CDROM -DHAVE_LIBRETRO -Ideps/libretro-common/include
 CFLAGS += -DNO_FRONTEND
-CFLAGS += -DUSE_ASYNC_GPU
+CFLAGS += -DUSE_ASYNC_GPU -DUSE_ASYNC_CDROM
 CFLAGS += -DBUILTIN_GPU=neon
 CFLAGS += -DNEON_BUILD -DTEXTURE_CACHE_4BPP -DTEXTURE_CACHE_8BPP -DSIMD_BUILD
 CFLAGS += -DHAVE_RTHREADS
@@ -235,3 +235,12 @@ clean:
 	rm -f $(TARGET) $(OBJS) main
 
 .PHONY: all clean
+
+.PHONY: gdb run runc
+gdb:
+	LD_LIBRARY_PATH=$(shell pwd) gdb --args ./main "$(ROM)"
+run:
+	LD_LIBRARY_PATH=$(shell pwd) ./main "$(ROM)"
+runc:
+	LD_LIBRARY_PATH=$(shell pwd) ./main "$(ROM)" c
+
