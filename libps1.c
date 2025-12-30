@@ -82,6 +82,20 @@ void set_key(size_t key, char val) {
 
 EXPOSE
 void init(const uint8_t* data, size_t len) {
+    if (psxCore) {
+        puts("Shutting down old core.");
+         psxCore->Notify(R3000ACPU_NOTIFY_BEFORE_SAVE, NULL);
+         psxCore->Shutdown();
+    }
+
+    if (Config.Cpu == CPU_INTERPRETER) {
+        puts("using interpreter");
+        psxCore = &psxInt;
+    } else {
+        puts("using recompiler");
+        psxCore = &psxRec;
+    }
+
     // RA: SysReset() called when rebootemu flag is set.
     psxCore->Init();
     psxCore->Notify(R3000ACPU_NOTIFY_AFTER_LOAD, NULL);
