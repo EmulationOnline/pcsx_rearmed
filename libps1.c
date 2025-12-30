@@ -25,9 +25,29 @@
 #include <stdio.h>
 
 #include "frontend/plugin_lib.h"
+#include "frontend/plugin.h"
 
-R3000Acpu *psxCore = NULL;
 uint32_t fbuffer_[VIDEO_WIDTH * VIDEO_HEIGHT];
+
+// Video output stubs
+static int vout_open(void) { return 0; }
+static void vout_close(void) {}
+static void vout_set_mode(int w, int h, int raw_w, int raw_h, int bpp) {
+    (void)w; (void)h; (void)raw_w; (void)raw_h; (void)bpp;
+}
+static void vout_flip(const void *vram, int vram_offset, int bgr24,
+                      int x, int y, int w, int h, int dims_changed) {
+    (void)vram; (void)vram_offset; (void)bgr24;
+    (void)x; (void)y; (void)w; (void)h; (void)dims_changed;
+}
+
+// Memory mapping for GPU VRAM
+static void *pl_mmap(unsigned int size) {
+    return psxMap(0, size, 0, MAP_TAG_VRAM);
+}
+static void pl_munmap(void *ptr, unsigned int size) {
+    psxUnmap(ptr, size, MAP_TAG_VRAM);
+}
 
 void SysPrintf(const char *fmt, ...) {
     va_list args;
@@ -46,7 +66,16 @@ int multitap1;
 int multitap2;
 
 // Other expected globals
-struct rearmed_cbs pl_rearmed_cbs;
+struct rearmed_cbs pl_rearmed_cbs = {
+    .pl_vout_open     = vout_open,
+    .pl_vout_set_mode = vout_set_mode,
+    .pl_vout_flip     = vout_flip,
+    .pl_vout_close    = vout_close,
+    .mmap             = pl_mmap,
+    .munmap           = pl_munmap,
+    .gpu_hcnt         = &hSyncCount,
+    .gpu_frame_count  = &frame_counter,
+};
 
 #include "plugins/dfsound/out.h"
 
@@ -82,28 +111,46 @@ void set_key(size_t key, char val) {
 
 EXPOSE
 void init(const uint8_t* data, size_t len) {
-    if (psxCore) {
+    if (psxCpu) {
         puts("Shutting down old core.");
-         psxCore->Notify(R3000ACPU_NOTIFY_BEFORE_SAVE, NULL);
-         psxCore->Shutdown();
+         psxCpu->Notify(R3000ACPU_NOTIFY_BEFORE_SAVE, NULL);
+         psxCpu->Shutdown();
     }
 
     if (Config.Cpu == CPU_INTERPRETER) {
         puts("using interpreter");
-        psxCore = &psxInt;
+        psxCpu = &psxInt;
     } else {
         puts("using recompiler");
-        psxCore = &psxRec;
+        psxCpu = &psxRec;
     }
 
     // RA: SysReset() called when rebootemu flag is set.
-    psxCore->Init();
-    psxCore->Notify(R3000ACPU_NOTIFY_AFTER_LOAD, NULL);
+    psxCpu->Init();
+    psxCpu->Notify(R3000ACPU_NOTIFY_AFTER_LOAD, NULL);
     // TODO: re-examine extensive config from libretro
     // Config.bios set to path to bios file.
-    psxCore->ApplyConfig();
-    // emu_core_preinit();
+    psxCpu->ApplyConfig();
+    emu_core_preinit();
     emu_core_init();
+    plugin_call_rearmed_cbs();
+
+    if (LoadPlugins() == -1) {
+        puts("Failed to load plugins.");
+        return;
+    }
+    if (OpenPlugins() == -1) {
+        puts("Failed to open plugins.");
+        return;
+    }
+
+
+    // FIXME: load from bin
+    puts("Loading cd");
+    set_cd_image("demo.chd");
+    SysReset();
+    LoadCdrom(); //("demo.chd");
+    puts("Loaded cd.");
 
     // TODO: design mapping to cdrom
 
@@ -119,7 +166,7 @@ const uint8_t *framebuffer() {
 EXPOSE
 void frame() {
    // regs.stop = 0
-   psxCore->Execute(&psxRegs);
+   psxCpu->Execute(&psxRegs);
 }
 
 EXPOSE

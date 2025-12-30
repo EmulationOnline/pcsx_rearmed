@@ -26,6 +26,9 @@ CFLAGS += -DBUILTIN_GPU=neon
 CFLAGS += -DNEON_BUILD -DTEXTURE_CACHE_4BPP -DTEXTURE_CACHE_8BPP -DSIMD_BUILD
 CFLAGS += -DHAVE_RTHREADS
 
+# Strict checking for interface file only
+CFLAGS_LIBPS1 = -Werror=missing-field-initializers
+
 # Specific overrides (will be applied in targets)
 CFLAGS_ZLIB = -Wno-unused -Wno-unused-function -DHAVE_UNISTD_H
 CFLAGS_CHDR = -Wno-unused -Wno-unused-function -Wno-unused -Wno-maybe-uninitialized -std=gnu11 -Ideps/libchdr/deps/lzma-24.05/include -Ideps/libchdr/deps/zstd-1.5.6/lib
@@ -231,6 +234,9 @@ deps/libchdr/deps/zstd-1.5.6/lib/%.o: deps/libchdr/deps/zstd-1.5.6/lib/%.c
 deps/lightning/lib/%.o: deps/lightning/lib/%.c
 	$(CC) $(CFLAGS) $(CFLAGS_LIGHTNING) -c $< -o $@
 
+libps1.o: libps1.c
+	$(CC) $(CFLAGS) $(CFLAGS_LIBPS1) -c $< -o $@
+
 clean:
 	rm -f $(TARGET) $(OBJS) main
 
@@ -243,4 +249,6 @@ run:
 	LD_LIBRARY_PATH=$(shell pwd) ./main "$(ROM)"
 runc:
 	LD_LIBRARY_PATH=$(shell pwd) ./main "$(ROM)" c
+try:
+	make -f Makefile.standalone all && make -f Makefile.standalone ROM=demo.chd run
 
