@@ -12,7 +12,7 @@
 #include "libpcsxcore/database.h"
 #include "plugins/dfsound/out.h"
 #include "plugins/dfsound/spu_config.h"
-// #include "cspace.h"
+#include "frontend/cspace.h"
 #include "frontend/main.h"
 // #include "menu.h"
 // #include "plugin.h"
@@ -28,17 +28,54 @@
 #include "frontend/plugin.h"
 
 uint32_t fbuffer_[VIDEO_WIDTH * VIDEO_HEIGHT];
+static int vout_w = VIDEO_WIDTH;
+static int vout_h = VIDEO_HEIGHT;
 
-// Video output stubs
+// Video output
 static int vout_open(void) { return 0; }
 static void vout_close(void) {}
+
 static void vout_set_mode(int w, int h, int raw_w, int raw_h, int bpp) {
-    (void)w; (void)h; (void)raw_w; (void)raw_h; (void)bpp;
+    (void)raw_w; (void)raw_h; (void)bpp;
+    vout_w = w;
+    vout_h = h;
 }
+
 static void vout_flip(const void *vram, int vram_offset, int bgr24,
                       int x, int y, int w, int h, int dims_changed) {
-    (void)vram; (void)vram_offset; (void)bgr24;
-    (void)x; (void)y; (void)w; (void)h; (void)dims_changed;
+    (void)x; (void)y; (void)dims_changed;
+
+    if (vram == NULL)
+        return;
+
+    const uint8_t *src = (const uint8_t *)vram + vram_offset;
+
+    // Clamp to our buffer size
+    int copy_w = (w < VIDEO_WIDTH) ? w : VIDEO_WIDTH;
+    int copy_h = (h < VIDEO_HEIGHT) ? h : VIDEO_HEIGHT;
+
+    if (bgr24) {
+        // 24-bit BGR888: 3 bytes per pixel
+        // Convert row by row since source stride may differ
+        int src_stride = w * 3;
+        for (int row = 0; row < copy_h; row++) {
+            bgr888_to_xrgb8888(
+                fbuffer_ + row * VIDEO_WIDTH,
+                src + row * src_stride,
+                copy_w * 3
+            );
+        }
+    } else {
+        // 16-bit BGR555: 2 bytes per pixel
+        int src_stride = w * 2;
+        for (int row = 0; row < copy_h; row++) {
+            bgr555_to_xrgb8888(
+                fbuffer_ + row * VIDEO_WIDTH,
+                src + row * src_stride,
+                copy_w * 2
+            );
+        }
+    }
 }
 
 // Memory mapping for GPU VRAM
@@ -168,7 +205,7 @@ const uint8_t *framebuffer() {
 EXPOSE
 void frame() {
    psxRegs.stop = 0;
-   psxCpu->Execute(&psxRegs);  // TODO
+   psxCpu->Execute(&psxRegs);
 }
 
 EXPOSE
