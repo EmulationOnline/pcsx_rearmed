@@ -54,11 +54,13 @@ static void vout_flip(const void *vram, int vram_offset, int bgr24,
     // Clamp to our buffer size
     int copy_w = (w < VIDEO_WIDTH) ? w : VIDEO_WIDTH;
     int copy_h = (h < VIDEO_HEIGHT) ? h : VIDEO_HEIGHT;
+    // printf("copying (%d , %d)\n", copy_w, copy_h);
 
     if (bgr24) {
         // 24-bit BGR888: 3 bytes per pixel
         // Convert row by row since source stride may differ
-        int src_stride = w * 3;
+        // void bgr888_to_xrgb8888(void *dst, const void *src, int bytes);
+        int src_stride = w * 3 * 2;  // stridex2 to compensate for interleaved src video.
         for (int row = 0; row < copy_h; row++) {
             bgr888_to_xrgb8888(
                 fbuffer_ + row * VIDEO_WIDTH,
@@ -68,7 +70,7 @@ static void vout_flip(const void *vram, int vram_offset, int bgr24,
         }
     } else {
         // 16-bit BGR555: 2 bytes per pixel
-        int src_stride = w * 2;
+        int src_stride = w * 2 * 2;
         for (int row = 0; row < copy_h; row++) {
             bgr555_to_xrgb8888(
                 fbuffer_ + row * VIDEO_WIDTH,

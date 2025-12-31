@@ -3,8 +3,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#define VIDEO_WIDTH 256
-#define VIDEO_HEIGHT 242
+#define VIDEO_WIDTH 512
+#define VIDEO_HEIGHT 256
 #define OVER_WIDTH 2048
 #define OVER_HEIGHT 512
 // Used by core to log to ui. Frontends are expected to define this.
