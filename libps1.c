@@ -344,27 +344,28 @@ int save_str(uint8_t* dest, int capacity) {
         .buffer = dest,
         .len = capacity,
     };
-    return SaveState(&buffer);
+    return SaveState((char*)&buffer);
 }
 // Loads len bytes from src
 EXPOSE 
 void load_str(int len, const uint8_t* src) {
     struct FileBuffer buffer = {
-        .buffer = src,
+        .buffer = (uint8_t*)src,
         .len = len,
     };
-    LoadState(&buffer);
+    LoadState((const char*)&buffer);
 }
 
 // APU
 EXPOSE
 long apu_sample_variable(int16_t *output, int32_t frames) {
-    long received = ring_pull(&ring_, output, frames);
+    size_t received = ring_pull(&ring_, output, frames);
     if (received < frames) {
-        printf("underrun, filling %d - %d frames\n", frames, received);
+        printf("underrun, filling %d - %ld frames\n", frames, received);
         int16_t last = received > 0 ? output[received-1] : 0;
         for (int i = received; i < frames; i++) {
             output[i] = last;
         }
     }
+    return received;
 }

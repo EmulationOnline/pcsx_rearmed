@@ -42,6 +42,9 @@ void load_state(const char* save_path);
 // Interface used by app. App closes fd.
 void save(int fd);
 void load(int fd);
+// file-free save interface
+int save_str(uint8_t* dest, int capacity);
+void load_str(int len, const uint8_t* src);
 
 // APU
 const int SAMPLE_RATE = 44100;
