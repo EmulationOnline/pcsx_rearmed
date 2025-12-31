@@ -24,9 +24,15 @@
 
 #include <stdarg.h>
 #include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <fcntl.h>
 
 #include "frontend/plugin_lib.h"
 #include "frontend/plugin.h"
+
+
+#define REQUIRE_CORE(val) if (!psxCpu) { puts(__func__); return val; }
 
 struct ring_i16 ring_;
 uint32_t fbuffer_[VIDEO_WIDTH * VIDEO_HEIGHT];
@@ -253,17 +259,102 @@ void frame() {
 }
 
 EXPOSE
- void dump_state(const char* save_path) {}
+ void dump_state(const char* filename) {
+    REQUIRE_CORE();
+    int fd = open(filename, O_CREAT | O_TRUNC | O_WRONLY , 0700);
+    if (fd == -1) {
+        perror("failed to open:");
+        return;
+    }
+    printf("saving to %s\n", filename);
+    save(fd);
+ }
 
 EXPOSE
-void load_state(const char* save_path) {}
+void load_state(const char* filename) {
+    REQUIRE_CORE();
+    int fd = open(filename,  O_RDONLY , 0700);
+    if (fd == -1) {
+        perror("Failed to open: ");
+        return;
+    }
+    load(fd);
+}
 
 // Interface used by app. App closes fd.
 EXPOSE
-void save(int fd) {}
+void save(int fd) {
+    REQUIRE_CORE();
+    int size = save_str(NULL, 0);
+    uint8_t *buffer = (uint8_t*)malloc(size);
+    save_str(buffer, size);
+    const uint8_t* wr = buffer;
+    while(size > 0) {
+        ssize_t count = write(fd, wr, size);
+        if (write < 0) {
+            perror("write failed: ");
+            exit(1);
+            return;
+        }
+        size -= count;
+        wr += count;
+    }
+    free(buffer);
+}
 
 EXPOSE
-void load(int fd) {}
+void load(int fd) {
+    REQUIRE_CORE();
+    off_t pos = lseek(fd, 0, SEEK_END);
+    if (pos < 0) {
+        perror("lseek failed: ");
+        exit(1);
+        return;
+    }
+    lseek(fd, 0, SEEK_SET);
+    uint8_t *buffer = malloc(pos);
+    size_t count = pos;
+    uint8_t *rd = buffer;
+    while (count > 0) {
+        ssize_t c = read(fd, rd, count);
+        if (c < 0) {
+            perror("Read failed: ");
+            exit(1);
+            return;
+        }
+        rd += c;
+        count -= c;
+    }
+    load_str(pos, buffer);
+    free(buffer);
+}
+
+// libpcsx uses bundle of fn ptrs to manage files.
+// we pass a ptr to a filebuffer to manage size & prevent oob.
+struct FileBuffer {
+    uint8_t* buffer;
+    size_t len;
+};
+
+// Returns bytes saved, and writes to dest. 
+// Dest may be null to calculate size only. returns < 0 on error.
+EXPOSE 
+int save_str(uint8_t* dest, int capacity) {
+    struct FileBuffer buffer = {
+        .buffer = dest,
+        .len = capacity,
+    };
+    return SaveState(&buffer);
+}
+// Loads len bytes from src
+EXPOSE 
+void load_str(int len, const uint8_t* src) {
+    struct FileBuffer buffer = {
+        .buffer = src,
+        .len = len,
+    };
+    LoadState(&buffer);
+}
 
 // APU
 EXPOSE
