@@ -43,11 +43,12 @@ static void vout_set_mode(int w, int h, int raw_w, int raw_h, int bpp) {
 
 static void vout_flip(const void *vram, int vram_offset, int bgr24,
                       int x, int y, int w, int h, int dims_changed) {
-    (void)x; (void)y; (void)dims_changed;
+    (void)dims_changed;
 
     if (vram == NULL)
         return;
 
+    vram_offset = 0;  // prevent y bounce from interlace.
     const uint8_t *src = (const uint8_t *)vram + vram_offset;
 
     // Clamp to our buffer size
@@ -112,6 +113,8 @@ struct rearmed_cbs pl_rearmed_cbs = {
     .munmap           = pl_munmap,
     .gpu_hcnt         = &hSyncCount,
     .gpu_frame_count  = &frame_counter,
+    // Disable interlace to prevent 1-pixel vertical bounce on progressive displays
+    .gpu_neon.allow_interlace = 0,
 };
 
 #include "plugins/dfsound/out.h"
