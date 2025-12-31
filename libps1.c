@@ -14,6 +14,7 @@
 #include "plugins/dfsound/spu_config.h"
 #include "frontend/cspace.h"
 #include "frontend/main.h"
+#include "ring.h"
 // #include "menu.h"
 // #include "plugin.h"
 // #include "plugin_lib.h"
@@ -27,6 +28,7 @@
 #include "frontend/plugin_lib.h"
 #include "frontend/plugin.h"
 
+struct ring_i16 ring_;
 uint32_t fbuffer_[VIDEO_WIDTH * VIDEO_HEIGHT];
 static int vout_w = VIDEO_WIDTH;
 static int vout_h = VIDEO_HEIGHT;
@@ -127,17 +129,22 @@ void corelib_set_puts(void (*cb)(const char *)) {
 }
 
 // Audio driver stub for dfsound
-static int dummy_init(void) { return 0; }
-static void dummy_finish(void) {}
-static int dummy_busy(void) { return 0; }
-static void dummy_feed(void *data, int bytes) {}
+static int apu_init(void) { return 0; }
+static void apu_finish(void) {}
+static int apu_busy(void) { return 0; }
+static void apu_feed(void *data, int bytes) {
+    printf("got audio: [%d bytes]\n", bytes);
+    int16_t* samples = (int16_t*)data;
+    size_t count = bytes / sizeof(int16_t);
+    ring_push(&ring_, samples, count);
+}
 
 void out_register_libretro(struct out_driver *drv) {
-    drv->name = "libretro_dummy";
-    drv->init = dummy_init;
-    drv->finish = dummy_finish;
-    drv->busy = dummy_busy;
-    drv->feed = dummy_feed;
+    drv->name = "pico_apu";
+    drv->init = apu_init;
+    drv->finish = apu_finish;
+    drv->busy = apu_busy;
+    drv->feed = apu_feed;
 }
 
 // Platform/Frontend stubs
@@ -176,6 +183,8 @@ void set_key(size_t key, char val) {
 
 EXPOSE
 void init(const uint8_t* data, size_t len) {
+    ring_init(&ring_);
+
     if (psxCpu) {
         puts("Shutting down old core.");
          psxCpu->Notify(R3000ACPU_NOTIFY_BEFORE_SAVE, NULL);
@@ -259,5 +268,12 @@ void load(int fd) {}
 // APU
 EXPOSE
 long apu_sample_variable(int16_t *output, int32_t frames) {
-    return 0;
+    long received = ring_pull(&ring_, output, frames);
+    if (received < frames) {
+        printf("underrun, filling %d - %d frames\n", frames, received);
+        int16_t last = received > 0 ? output[received-1] : 0;
+        for (int i = received; i < frames; i++) {
+            output[i] = last;
+        }
+    }
 }
