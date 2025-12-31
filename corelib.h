@@ -23,6 +23,8 @@ enum Keys {
     BTN_R,
     BTN_L2,
     BTN_R2,
+    BTN_X,
+    BTN_Y,
     NUM_KEYS
 };
 

@@ -148,9 +148,30 @@ void pl_frame_limit(void) {
 void pl_timing_prepare(int is_pal) {}
 void pl_gun_byte2(int port, unsigned char byte) {}
 
+const int PLAYER_1 = 0;
 EXPOSE
 void set_key(size_t key, char val) {
-     // examine in_keystate or input_state_cb
+    // analog sticks unsupported, original ps1 didnt have and
+    // most games dont need them.
+    uint16_t mask = 0;
+    switch (key) {
+        case BTN_B: mask = 1 << DKEY_CROSS; break;
+        case BTN_A: mask = 1 << DKEY_CIRCLE; break;
+        case BTN_X: mask = 1 << DKEY_SQUARE; break;
+        case BTN_Y: mask = 1 << DKEY_TRIANGLE; break;
+        case BTN_Up: mask = 1 << DKEY_UP; break;
+        case BTN_Down: mask = 1 << DKEY_DOWN; break;
+        case BTN_Left: mask = 1 << DKEY_LEFT; break;
+        case BTN_Right: mask = 1 << DKEY_RIGHT; break;
+        case BTN_Start: mask = 1 << DKEY_START; break;
+        case BTN_Sel: mask = 1 << DKEY_SELECT; break;
+        default: return;
+    }
+    if (val) {
+        in_keystate[PLAYER_1] |= mask;
+    } else {
+        in_keystate[PLAYER_1] &= ~mask;
+    }
 }
 
 EXPOSE
