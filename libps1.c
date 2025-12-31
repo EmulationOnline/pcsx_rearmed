@@ -147,8 +147,8 @@ static void apu_feed(void *data, int bytes) {
     int16_t* samples = (int16_t*)data;
     size_t count = bytes / sizeof(int16_t) / 2;
     for (int i = 0; i < count; i++) {
-        samples[i] = samples[i*2];
-        // samples[i] = (samples[i*2] + samples[i*2+1]) / 2;
+        // samples[i] = samples[i*2];
+        samples[i] = (samples[i*2] + samples[i*2+1]) / 2;
     }
     ring_push(&ring_, samples, count);
 }
