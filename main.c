@@ -132,7 +132,7 @@ int main(int argc, char **argv) {
   SDL_Renderer *renderer = SDL_CreateRenderer(
       SDL_CreateWindow("pico advance", 0, 0, VIDEO_WIDTH*SCALE, VIDEO_HEIGHT*SCALE, SDL_WINDOW_SHOWN), -1,
       SDL_RENDERER_ACCELERATED);
-  SDL_Texture *texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32,
+  SDL_Texture *texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_BGRA32,
   // SDL_Texture *texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB565,
                                     SDL_TEXTUREACCESS_STREAMING, VIDEO_WIDTH, VIDEO_HEIGHT);
   SoundCard soundcard;
