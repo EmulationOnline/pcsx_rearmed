@@ -134,14 +134,22 @@ void corelib_set_puts(void (*cb)(const char *)) {
     emu_puts_cb = cb;
 }
 
+int framerate() {
+    return psxGetFps();
+}
+
 // Audio driver stub for dfsound
 static int apu_init(void) { return 0; }
 static void apu_finish(void) {}
 static int apu_busy(void) { return 0; }
 static void apu_feed(void *data, int bytes) {
-    printf("got audio: [%d bytes]\n", bytes);
+    // printf("got audio: [%d bytes]\n", bytes);
     int16_t* samples = (int16_t*)data;
-    size_t count = bytes / sizeof(int16_t);
+    size_t count = bytes / sizeof(int16_t) / 2;
+    for (int i = 0; i < count; i++) {
+        samples[i] = samples[i*2];
+        // samples[i] = (samples[i*2] + samples[i*2+1]) / 2;
+    }
     ring_push(&ring_, samples, count);
 }
 
@@ -254,6 +262,7 @@ const uint8_t *framebuffer() {
 
 EXPOSE
 void frame() {
+    // puts("frame");
    psxRegs.stop = 0;
    psxCpu->Execute(&psxRegs);
 }
@@ -353,7 +362,7 @@ EXPOSE
 long apu_sample_variable(int16_t *output, int32_t frames) {
     size_t received = ring_pull(&ring_, output, frames);
     if (received < frames) {
-        printf("underrun, filling %d - %ld frames\n", frames, received);
+        // printf("underrun, filling %d - %ld frames\n", frames, received);
         int16_t last = received > 0 ? output[received-1] : 0;
         for (int i = received; i < frames; i++) {
             output[i] = last;

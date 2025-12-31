@@ -37,6 +37,8 @@ void set_key(size_t key, char val);
 void init(const uint8_t* data, size_t len);
 const uint8_t *framebuffer();
 void frame();
+int framerate();
+
 void dump_state(const char* save_path);
 void load_state(const char* save_path);
 // Interface used by app. App closes fd.

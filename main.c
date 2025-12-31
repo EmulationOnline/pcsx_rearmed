@@ -159,7 +159,9 @@ int main(int argc, char **argv) {
       // SDL_RenderPresent(renderer);
       clock_t now = clock();
       // printf("now: %ld\n", now);
-      ssize_t delay = (last + 16666) - now;
+      // printf("frame speed: %f\n", 1000.0*1000 / (now - last));
+      size_t delta = 1000*1000 / framerate();
+      ssize_t delay = (last + delta) - now;
       if (delay > 0) {
           usleep(delay);
       } else {
