@@ -340,20 +340,12 @@ struct FileBuffer {
 // Dest may be null to calculate size only. returns < 0 on error.
 EXPOSE 
 int save_str(uint8_t* dest, int capacity) {
-    struct FileBuffer buffer = {
-        .buffer = dest,
-        .len = capacity,
-    };
-    return SaveState((char*)&buffer);
+    return SaveState((char*)&dest);
 }
 // Loads len bytes from src
 EXPOSE 
 void load_str(int len, const uint8_t* src) {
-    struct FileBuffer buffer = {
-        .buffer = (uint8_t*)src,
-        .len = len,
-    };
-    LoadState((const char*)&buffer);
+    LoadState((const char*)&src);
 }
 
 // APU
