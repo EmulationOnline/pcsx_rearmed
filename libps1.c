@@ -198,6 +198,21 @@ void set_key(size_t key, char val) {
     }
 }
 
+const char* mkfile(const uint8_t* data, size_t bytes) {
+    const char* path = "/data/local/tmp/ps1.chd";
+    int fd = open(path, O_CREAT | O_TRUNC | O_WRONLY, 0700);
+    while (bytes > 0) {
+        int written = write(fd, data, bytes);
+        if (written <= 0) {
+            break;
+        }
+        bytes -= written;
+        data += written;
+    }
+    close(fd);
+    return path;
+}
+
 EXPOSE
 void init(const uint8_t* data, size_t len) {
     ring_init(&ring_);
@@ -227,7 +242,10 @@ void init(const uint8_t* data, size_t len) {
 
     // Set CD image BEFORE LoadPlugins (needed by cdra_open in OpenPlugins)
     puts("Loading cd");
-    set_cd_image("demo.chd");
+    const char* tmpfile = mkfile(data, len);
+    printf("Generated tmpfile: %s\n", tmpfile);
+    // set_cd_image("demo.chd");
+    set_cd_image(tmpfile);
 
     if (LoadPlugins() == -1) {
         puts("Failed to load plugins.");
