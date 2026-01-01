@@ -55,9 +55,10 @@ static void vout_flip(const void *vram, int vram_offset, int bgr24,
 
     if (vram == NULL)
         return;
+    printf("offset=%d bgr=%d\n", vram_offset, bgr24);
 
-    vram_offset = 0;  // prevent y bounce from interlace.
-    const uint8_t *src = (const uint8_t *)vram + vram_offset;
+    // vram_offset = 0;  // prevent y bounce from interlace.
+    const uint8_t *src = (const uint8_t *)vram;
 
     // Clamp to our buffer size
     int copy_w = (w < VIDEO_WIDTH) ? w : VIDEO_WIDTH;
@@ -65,6 +66,7 @@ static void vout_flip(const void *vram, int vram_offset, int bgr24,
     // printf("copying (%d , %d)\n", copy_w, copy_h);
 
     if (bgr24) {
+        // bgr24 used typically for FMVs
         // 24-bit BGR888: 3 bytes per pixel
         // Convert row by row since source stride may differ
         // void bgr888_to_xrgb8888(void *dst, const void *src, int bytes);
@@ -72,19 +74,20 @@ static void vout_flip(const void *vram, int vram_offset, int bgr24,
         for (int row = 0; row < copy_h; row++) {
             bgr888_to_xrgb8888(
                 fbuffer_ + row * VIDEO_WIDTH,
-                src + row * src_stride,
+                src + vram_offset,
                 copy_w * 3
             );
+            vram_offset = (vram_offset + 2048) & 0xFFFFF;
         }
     } else {
         // 16-bit BGR555: 2 bytes per pixel
-        int src_stride = w * 2 * 2;
         for (int row = 0; row < copy_h; row++) {
             bgr555_to_xrgb8888(
                 fbuffer_ + row * VIDEO_WIDTH,
-                src + row * src_stride,
+                src + vram_offset,
                 copy_w * 2
             );
+            vram_offset = (vram_offset + 2048) & 0xFFFFF;
         }
     }
 }
