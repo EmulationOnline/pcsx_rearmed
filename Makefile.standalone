@@ -24,10 +24,46 @@ override CFLAGS += -Ideps/lightning/include -Ideps/lightrec -Iinclude/lightning 
 ifneq (,$(findstring aarch64-linux,$(CC)))
 	# arm64
 	override CFLAGS += -DDYNAREC=ari64
+	override CFLAGS += -Inew_dynarec/
+	SRCS_DYNAREC = \
+	  libpcsxcore/new_dynarec/assem_arm64.c \
+  	  libpcsxcore/new_dynarec/linkage_arm64.S \
+	  libpcsxcore/new_dynarec/new_dynarec.c \
+	  libpcsxcore/new_dynarec/pcsxmem.c \
+	  libpcsxcore/new_dynarec/pcsxmem_inline.c \
+      libpcsxcore/new_dynarec/emu_if.c \
+      libpcsxcore/new_dynarec/new_dynarec.c
+else ifneq (,$(findstring armv7,$(CC)))
+	# arm != aarch64
+	$(error arm32 not yet supported)
+	# libpcsxcore/new_dynarec/assem_arm.c \
+	  libpcsxcore/new_dynarec/linkage_arm.S
 else
 	# default to x86
 	override CFLAGS += -DLIGHTREC -DLIGHTREC_STATIC -DLIGHTREC_CUSTOM_MAP=1 -DLIGHTREC_CODE_INV=0
 	override CFLAGS += -DLIGHTREC_ENABLE_THREADED_COMPILER=0 -DLIGHTREC_ENABLE_DISASSEMBLER=0 -DLIGHTREC_NO_DEBUG=1
+	# Dynarec (Lightrec)
+	SRCS_DYNAREC = \
+		libpcsxcore/lightrec/mem.c \
+		libpcsxcore/lightrec/plugin.c \
+		libpcsxcore/new_dynarec/emu_if.c \
+		deps/lightrec/tlsf/tlsf.c \
+		deps/lightrec/blockcache.c \
+		deps/lightrec/constprop.c \
+		deps/lightrec/disassembler.c \
+		deps/lightrec/emitter.c \
+		deps/lightrec/interpreter.c \
+		deps/lightrec/lightrec.c \
+		deps/lightrec/memmanager.c \
+		deps/lightrec/optimizer.c \
+		deps/lightrec/regcache.c \
+		deps/lightning/lib/jit_disasm.c \
+		deps/lightning/lib/jit_memory.c \
+		deps/lightning/lib/jit_names.c \
+		deps/lightning/lib/jit_note.c \
+		deps/lightning/lib/jit_print.c \
+		deps/lightning/lib/jit_size.c \
+		deps/lightning/lib/lightning.c
 endif
 override CFLAGS += -DGPU_NEON -DHAVE_CHD -Ideps/libchdr/include
 override CFLAGS += -DHAVE_CDROM -DHAVE_LIBRETRO -Ideps/libretro-common/include
@@ -92,28 +128,6 @@ SRCS_FRONTEND_COMMON = \
 	frontend/cspace.c \
 	frontend/pcsxr-threads.c
 
-# Dynarec (Lightrec)
-SRCS_DYNAREC = \
-	libpcsxcore/lightrec/mem.c \
-	libpcsxcore/lightrec/plugin.c \
-	libpcsxcore/new_dynarec/emu_if.c \
-	deps/lightrec/tlsf/tlsf.c \
-	deps/lightrec/blockcache.c \
-	deps/lightrec/constprop.c \
-	deps/lightrec/disassembler.c \
-	deps/lightrec/emitter.c \
-	deps/lightrec/interpreter.c \
-	deps/lightrec/lightrec.c \
-	deps/lightrec/memmanager.c \
-	deps/lightrec/optimizer.c \
-	deps/lightrec/regcache.c \
-	deps/lightning/lib/jit_disasm.c \
-	deps/lightning/lib/jit_memory.c \
-	deps/lightning/lib/jit_names.c \
-	deps/lightning/lib/jit_note.c \
-	deps/lightning/lib/jit_print.c \
-	deps/lightning/lib/jit_size.c \
-	deps/lightning/lib/lightning.c
 
 # SPU (DFSound)
 SRCS_SPU = \
