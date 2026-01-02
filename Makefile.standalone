@@ -4,27 +4,38 @@
 
 TARGET = libps1.so
 
+.PHONY: lib
+lib: $(TARGET)
+
 # Compiler and Linker
-CC = cc
+# CC = cc
 LD = cc
 
 # Global Compiler Flags (from build log)
-CFLAGS  = '-DGIT_VERSION=" a2640fe1"'
-CFLAGS += -fPIC -mssse3
-CFLAGS += -Wall -Iinclude -ffast-math -O3 -DNDEBUG
-CFLAGS += -ffunction-sections -fdata-sections
-CFLAGS += -DP_HAVE_MMAP=1 -DP_HAVE_PTHREAD=1 -DP_HAVE_POSIX_MEMALIGN=1 -DDISABLE_MEM_LUTS=0
-CFLAGS += -Ideps/libchdr/deps/zlib-1.3.1
-CFLAGS += -Ideps/lightning/include -Ideps/lightrec -Iinclude/lightning -Iinclude/lightrec
-CFLAGS += -DLIGHTREC -DLIGHTREC_STATIC -DLIGHTREC_CUSTOM_MAP=1 -DLIGHTREC_CODE_INV=0
-CFLAGS += -DLIGHTREC_ENABLE_THREADED_COMPILER=0 -DLIGHTREC_ENABLE_DISASSEMBLER=0 -DLIGHTREC_NO_DEBUG=1
-CFLAGS += -DGPU_NEON -DHAVE_CHD -Ideps/libchdr/include
-CFLAGS += -DHAVE_CDROM -DHAVE_LIBRETRO -Ideps/libretro-common/include
-CFLAGS += -DNO_FRONTEND
-CFLAGS += -DUSE_ASYNC_GPU -DUSE_ASYNC_CDROM
-CFLAGS += -DBUILTIN_GPU=neon
-CFLAGS += -DNEON_BUILD -DTEXTURE_CACHE_4BPP -DTEXTURE_CACHE_8BPP -DSIMD_BUILD
-CFLAGS += -DHAVE_RTHREADS
+override CFLAGS  = '-DGIT_VERSION=" a2640fe1"'
+override CFLAGS += -fPIC
+#override CFLAGS += -fPIC -march=native
+# CFLAGS += -fPIC -mssse3
+override CFLAGS += -Wall -Iinclude -ffast-math -O3 -DNDEBUG
+override CFLAGS += -ffunction-sections -fdata-sections
+override CFLAGS += -DP_HAVE_MMAP=1 -DP_HAVE_PTHREAD=1 -DP_HAVE_POSIX_MEMALIGN=1 -DDISABLE_MEM_LUTS=0
+override CFLAGS += -Ideps/libchdr/deps/zlib-1.3.1
+override CFLAGS += -Ideps/lightning/include -Ideps/lightrec -Iinclude/lightning -Iinclude/lightrec
+ifneq (,$(findstring aarch64-linux,$(CC)))
+	# arm64
+	override CFLAGS += -DDYNAREC=ari64
+else
+	# default to x86
+	override CFLAGS += -DLIGHTREC -DLIGHTREC_STATIC -DLIGHTREC_CUSTOM_MAP=1 -DLIGHTREC_CODE_INV=0
+	override CFLAGS += -DLIGHTREC_ENABLE_THREADED_COMPILER=0 -DLIGHTREC_ENABLE_DISASSEMBLER=0 -DLIGHTREC_NO_DEBUG=1
+endif
+override CFLAGS += -DGPU_NEON -DHAVE_CHD -Ideps/libchdr/include
+override CFLAGS += -DHAVE_CDROM -DHAVE_LIBRETRO -Ideps/libretro-common/include
+override CFLAGS += -DNO_FRONTEND
+override CFLAGS += -DUSE_ASYNC_GPU -DUSE_ASYNC_CDROM
+override CFLAGS += -DBUILTIN_GPU=neon
+override CFLAGS += -DNEON_BUILD -DTEXTURE_CACHE_4BPP -DTEXTURE_CACHE_8BPP -DSIMD_BUILD
+override CFLAGS += -DHAVE_RTHREADS
 
 # Strict checking for interface file only
 CFLAGS_LIBPS1 = -Werror=missing-field-initializers
