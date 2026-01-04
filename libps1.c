@@ -316,6 +316,7 @@ EXPOSE
 void save(int fd) {
     REQUIRE_CORE();
     int size = save_str(NULL, 0);
+    printf("Calculated save size: %d\n", size);
     uint8_t *buffer = (uint8_t*)malloc(size);
     save_str(buffer, size);
     const uint8_t* wr = buffer;
@@ -359,23 +360,162 @@ void load(int fd) {
     free(buffer);
 }
 
+
+
 // libpcsx uses bundle of fn ptrs to manage files.
 // we pass a ptr to a filebuffer to manage size & prevent oob.
 struct FileBuffer {
+    // if buffer is nullptr, reads and writes will report
+    // success but no-op. This is used by write code to calculate
+    // required size.
     uint8_t* buffer;
     size_t len;
+    size_t pos;
+    char write;
+    char closed;
 };
+
+void *str_open(const char *name, const char *mode) {
+    struct FileBuffer* buf = (struct FileBuffer*)name;
+    if (strcmp(mode, "wb") == 0 && buf->write) {
+        if (buf->buffer == 0) {
+            puts("setting null buffer.len to MAX_SIZE for estimation.");
+            buf->len = SIZE_MAX;
+        }
+    } else if (strcmp(mode, "rb") == 0 && !buf->write) {
+    } else {
+        printf("unsupported mode for str_open: %s, buf.write=%d\n", mode,
+                buf->write);
+        return NULL;
+    }
+    buf->pos = 0;
+    buf->closed = 0;
+    return (void*)buf;
+}
+
+// returns bytes read or <= 0 on error
+int str_read(void *file, void *dst, u32 len) {
+    struct FileBuffer* buf = (struct FileBuffer*)file;
+    if (buf->closed) {
+        puts("Cannot write, str_buf already closed.");
+        return -1;
+    }
+    if (buf->pos < buf->len) {
+        size_t rem = buf->len - buf->pos;
+        len = len < rem ? len : rem;
+        if (buf->buffer) {
+            memcpy(dst, buf->buffer + buf->pos, len);
+        }
+        buf->pos += len;
+        printf("read %d bytes\n", len);
+    } else {
+        puts("str_read already at EOF.");
+        return 0;
+    }
+}
+
+// returns bytes written or <= 0 on error
+int str_write(void *file, const void *src, u32 len) {
+    struct FileBuffer* buf = (struct FileBuffer*)file;
+    if (buf->closed) {
+        puts("cannot write, str_buf already closed.");
+        return 0;
+    }
+    if (buf->pos < buf->len) {
+        size_t rem = buf->len - buf->pos;
+        len = len < rem ? len : rem;
+        if (buf->buffer) {
+            memcpy(buf->buffer + buf->pos, src, len);
+        }
+        buf->pos += len;
+        printf("wrote %d bytes\n", len);
+    } else {
+        puts("str_write already at EOF.");
+        return 0;
+    }
+}
+long  str_seek(void *file, long offs, int whence) {
+    struct FileBuffer* buf = (struct FileBuffer*)file;
+    int newpos = 0;
+    switch (whence) {
+        case SEEK_SET:
+            puts("str SEEK_SET");
+            // The file offset is set to offset bytes.
+            // NOTE: unix lseek allows increasing size of file / writing
+            // beyond by tracking the 'hole size'. We dont support that
+            // on strings, so will fail if seeked OOB.
+            newpos = offs;
+            break;
+        case SEEK_CUR:
+            puts("str SEEK_CUR");
+            // The file offset is set to its current location plus offset bytes.
+            newpos = offs + buf->pos;
+            break;
+        case SEEK_END:
+            puts("str SEEK_END");
+            // The file offset is set to the size of the file plus offset bytes.
+            newpos = offs + buf->len;
+            break;
+        default:
+            printf("unknown WHENCE(%d) for str_seek, skipping\n", whence);
+            return buf->pos;
+    }
+    if (newpos >= 0 && newpos < buf->len) {
+        buf->pos = newpos;
+    } else {
+        puts("Cannot str_seek OOB, ignoring.");
+    }
+    return buf->pos;
+}
+void str_close(void *file) {
+    struct FileBuffer* buf = (struct FileBuffer*)file;
+    buf->closed = 1;
+}
+
+void strSaveFuncs(uint8_t* buffer, size_t len) {
+    // len represents buffer capacity for saving, or
+    // size of blob for loading.
+    struct PcsxSaveFuncs funcs = {
+        .open = str_open,
+        .read = str_read,
+        .write = str_write,
+        .seek = str_seek,
+        .close = str_close,
+    };
+    SaveFuncs = funcs;
+}
 
 // Returns bytes saved, and writes to dest. 
 // Dest may be null to calculate size only. returns < 0 on error.
 EXPOSE 
 int save_str(uint8_t* dest, int capacity) {
-    return SaveState((char*)&dest);
+    struct PcsxSaveFuncs oldSaveFuncs = SaveFuncs;
+    strSaveFuncs(dest, capacity);
+    struct FileBuffer buf = {
+        .buffer = dest,
+        .len = capacity,
+        .pos = 0,
+        .write = 1,
+        .closed = 0,
+    };
+    int ret = SaveState((char*)&buf);
+    SaveFuncs = oldSaveFuncs;
+    return buf.pos;
 }
 // Loads len bytes from src
 EXPOSE 
 void load_str(int len, const uint8_t* src) {
-    LoadState((const char*)&src);
+    struct PcsxSaveFuncs oldSaveFuncs = SaveFuncs;
+    strSaveFuncs(src, len);
+    struct FileBuffer buf = {
+        .buffer = src,
+        .len = len,
+        .pos = 0,
+        .write = 0,
+        .closed = 0,
+    };
+    LoadState((const char*)&buf);
+    SaveFuncs = oldSaveFuncs;
 }
 
 // APU
