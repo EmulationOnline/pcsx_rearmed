@@ -407,7 +407,7 @@ int str_read(void *file, void *dst, u32 len) {
             memcpy(dst, buf->buffer + buf->pos, len);
         }
         buf->pos += len;
-        printf("read %d bytes\n", len);
+        // printf("read %d bytes\n", len);
     } else {
         puts("str_read already at EOF.");
         return 0;
@@ -428,7 +428,7 @@ int str_write(void *file, const void *src, u32 len) {
             memcpy(buf->buffer + buf->pos, src, len);
         }
         buf->pos += len;
-        printf("wrote %d bytes\n", len);
+        // printf("wrote %d bytes\n", len);
     } else {
         puts("str_write already at EOF.");
         return 0;
