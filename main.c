@@ -134,8 +134,10 @@ int main(int argc, char **argv) {
   }
 
   SDL_Init(SDL_INIT_VIDEO);
+  SDL_Window *window = 
+      SDL_CreateWindow("pico station", 0, 0, VIDEO_WIDTH*SCALE, VIDEO_HEIGHT*SCALE, SDL_WINDOW_SHOWN);
   SDL_Renderer *renderer = SDL_CreateRenderer(
-      SDL_CreateWindow("pico station", 0, 0, VIDEO_WIDTH*SCALE, VIDEO_HEIGHT*SCALE, SDL_WINDOW_SHOWN), -1,
+      window, -1,
       SDL_RENDERER_ACCELERATED);
   SDL_Texture *texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_BGRA32,
   // SDL_Texture *texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB565,
@@ -147,9 +149,20 @@ int main(int argc, char **argv) {
   clock_t last = clock();
   clock_t start = clock();
   static_assert(CLOCKS_PER_SEC == 1000*1000, "Bad clock assumptions");
+  char title[50];
+  int w=0,h=0;
+
   while(run) {
       input();
       frame();
+      int wp = width();
+      int hp = height();
+      if (wp != w || hp != h) {
+          w = wp; 
+          h = hp; 
+          snprintf(title, sizeof(title), "picostation - %d x %d", w, h);
+          SDL_SetWindowTitle(window, title);
+      }
       SDL_UpdateTexture(texture, 0, framebuffer(), VIDEO_WIDTH*BYTES_PER_PIXEL);
       SDL_RenderCopy(renderer, texture, 0, 0);
       SDL_RenderPresent(renderer);

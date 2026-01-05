@@ -49,6 +49,15 @@ static void vout_set_mode(int w, int h, int raw_w, int raw_h, int bpp) {
     vout_h = h;
 }
 
+EXPOSE
+int width() {
+    return vout_w;
+}
+EXPOSE
+int height() {
+    return vout_h;
+}
+
 static void vout_flip(const void *vram, int vram_offset, int bgr24,
                       int x, int y, int w, int h, int dims_changed) {
     (void)dims_changed;

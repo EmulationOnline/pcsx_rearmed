@@ -3,10 +3,9 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#define VIDEO_WIDTH 512
-#define VIDEO_HEIGHT 256
-#define OVER_WIDTH 2048
-#define OVER_HEIGHT 512
+// Video is 16 bit pixels
+#define VIDEO_WIDTH 1024
+#define VIDEO_HEIGHT 512
 // Used by core to log to ui. Frontends are expected to define this.
 
 
@@ -37,7 +36,10 @@ void set_key(size_t key, char val);
 void init(const uint8_t* data, size_t len);
 const uint8_t *framebuffer();
 void frame();
+// dynamic video
 int framerate();
+int width();
+int height();
 
 void dump_state(const char* save_path);
 void load_state(const char* save_path);
@@ -47,6 +49,7 @@ void load(int fd);
 // file-free save interface
 int save_str(uint8_t* dest, int capacity);
 void load_str(int len, const uint8_t* src);
+
 
 // APU
 const int SAMPLE_RATE = 44100;
