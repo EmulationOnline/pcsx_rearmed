@@ -32,8 +32,14 @@ ifneq (,$(findstring aarch64-linux,$(CC)))
 	override SRCS_ASM += libpcsxcore/new_dynarec/linkage_arm64.S
    	# libpcsxcore/new_dynarec/assem_arm64.c \ included from new_dynarec
 else ifneq (,$(findstring armv7,$(CC)))
-	# arm != aarch64
-	$(error arm32 not yet supported)
+	# older arm
+	override CFLAGS += -DDYNAREC=ari64
+	override CFLAGS += -Inew_dynarec/
+	SRCS_DYNAREC = \
+	  libpcsxcore/new_dynarec/new_dynarec.c \
+      libpcsxcore/new_dynarec/emu_if.c \
+	  libpcsxcore/new_dynarec/pcsxmem.c
+	override SRCS_ASM += libpcsxcore/new_dynarec/linkage_arm.S
 	# libpcsxcore/new_dynarec/assem_arm.c \
 	  libpcsxcore/new_dynarec/linkage_arm.S
 else
@@ -269,6 +275,7 @@ libps1.o: libps1.c
 
 clean:
 	rm -f $(TARGET) $(OBJS) main
+	find . -name "*.o" -delete
 
 .PHONY: all clean
 
