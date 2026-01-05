@@ -152,6 +152,12 @@ int main(int argc, char **argv) {
   char title[50];
   int w=0,h=0;
 
+  SDL_Rect srcRect = {
+      .x = 0,
+      .y = 0,
+      .w = 0,
+      .h = 0,
+  };
   while(run) {
       input();
       frame();
@@ -162,9 +168,12 @@ int main(int argc, char **argv) {
           h = hp; 
           snprintf(title, sizeof(title), "picostation - %d x %d", w, h);
           SDL_SetWindowTitle(window, title);
+          SDL_SetWindowSize(window, w*SCALE, h*SCALE);
+          srcRect.w = w;
+          srcRect.h = h;
       }
       SDL_UpdateTexture(texture, 0, framebuffer(), VIDEO_WIDTH*BYTES_PER_PIXEL);
-      SDL_RenderCopy(renderer, texture, 0, 0);
+      SDL_RenderCopy(renderer, texture, &srcRect, 0);
       SDL_RenderPresent(renderer);
       // soundcard_queue(&soundcard, audio_buffer, audio_bytes);
       // SDL_UpdateTexture(texture, 0, finished_frame + 2048, 512);
