@@ -22,7 +22,6 @@
 
 #include "pcnt.h"
 #include "arm_features.h"
-#include "assem_arm64.h"
 
 /* Linker */
 static void set_jump_target_far1(u_int *insn_, void *target)

@@ -27,7 +27,6 @@
 #include "../gte_neon.h"
 #include "pcnt.h"
 #include "arm_features.h"
-#include "assem_arm.h"
 
 #ifdef TC_WRITE_OFFSET
 #error "not implemented"

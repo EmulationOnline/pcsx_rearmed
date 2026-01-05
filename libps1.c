@@ -279,10 +279,6 @@ void init(const uint8_t* data, size_t len) {
     }
     puts("Loaded cd.");
 
-    // TODO: design mapping to cdrom
-
-    // examine for audio: retro_set_audio_buff_status_cb();
-    // video: retro_get_system_av_info
 }
 
 // Bios may be unloaded via copy_bios(null, 0);

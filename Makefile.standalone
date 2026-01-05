@@ -9,7 +9,7 @@ lib: $(TARGET)
 
 # Compiler and Linker
 # CC = cc
-LD = cc
+LD = $(CC)
 
 # Global Compiler Flags (from build log)
 override CFLAGS  = '-DGIT_VERSION=" a2640fe1"'
@@ -20,19 +20,17 @@ override CFLAGS += -Wall -Iinclude -ffast-math -O3 -DNDEBUG
 override CFLAGS += -ffunction-sections -fdata-sections
 override CFLAGS += -DP_HAVE_MMAP=1 -DP_HAVE_PTHREAD=1 -DP_HAVE_POSIX_MEMALIGN=1 -DDISABLE_MEM_LUTS=0
 override CFLAGS += -Ideps/libchdr/deps/zlib-1.3.1
-override CFLAGS += -Ideps/lightning/include -Ideps/lightrec -Iinclude/lightning -Iinclude/lightrec
+override CFLAGS += -Ideps/lightning/include -Ideps/lightrec -Iinclude/lightning -Iinclude/lightrec -Iinclude
 ifneq (,$(findstring aarch64-linux,$(CC)))
 	# arm64
 	override CFLAGS += -DDYNAREC=ari64
 	override CFLAGS += -Inew_dynarec/
 	SRCS_DYNAREC = \
-	  libpcsxcore/new_dynarec/assem_arm64.c \
-  	  libpcsxcore/new_dynarec/linkage_arm64.S \
 	  libpcsxcore/new_dynarec/new_dynarec.c \
-	  libpcsxcore/new_dynarec/pcsxmem.c \
-	  libpcsxcore/new_dynarec/pcsxmem_inline.c \
       libpcsxcore/new_dynarec/emu_if.c \
-      libpcsxcore/new_dynarec/new_dynarec.c
+	  libpcsxcore/new_dynarec/pcsxmem.c
+	override SRCS_ASM += libpcsxcore/new_dynarec/linkage_arm64.S
+   	# libpcsxcore/new_dynarec/assem_arm64.c \ included from new_dynarec
 else ifneq (,$(findstring armv7,$(CC)))
 	# arm != aarch64
 	$(error arm32 not yet supported)
@@ -87,7 +85,13 @@ CFLAGS_GTE_NF = -DFLAGLESS
 # Linker Flags
 # Removed -Wl,-version-script and -fvisibility=hidden to allow EXPOSE to work
 LDFLAGS = -shared -Wl,--gc-sections
+
+ifneq (,$(findstring android,$(CC)))
+# no need to include pthread, rt for android
+LDLIBS  = -lm -ldl
+else
 LDLIBS  = -lpthread -lm -ldl -lrt
+endif
 
 # -----------------------------------------------------------------------------
 # Source Files
@@ -189,7 +193,7 @@ SRCS_CHDR = \
 	deps/libchdr/src/libchdr_flac.c \
 	deps/libchdr/src/libchdr_huffman.c
 
-SRCS_ASM = \
+override SRCS_ASM += \
 	deps/libchdr/deps/zstd-1.5.6/lib/decompress/huf_decompress_amd64.S
 
 # Dependencies: Libretro Common
@@ -228,6 +232,7 @@ all: $(TARGET) main
 
 $(TARGET): $(OBJS)
 	$(LD) -o $@ -shared -fPIC $(OBJS) $(LDFLAGS) $(LDLIBS)
+	cp $(TARGET) libapu.so
 
 main: $(TARGET) main.c
 	$(CC) main.c -L. -lps1 -Wl,-rpath=. $(shell pkg-config --cflags --libs sdl2) -o main

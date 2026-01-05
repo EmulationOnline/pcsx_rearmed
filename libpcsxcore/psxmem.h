@@ -120,6 +120,8 @@ extern int cache_isolated;
 #define DISABLE_MEM_LUTS 0
 #endif
 
+void psxMemBiosCopy(const uint8_t* buffer, size_t len);
+
 static inline void * psxm_lut(u32 mem, int write, u8 **lut)
 {
 	if (!DISABLE_MEM_LUTS) {

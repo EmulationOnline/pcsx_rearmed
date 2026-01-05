@@ -7,6 +7,7 @@
  * ARM64 support  gcc 4.8/clang 3.5
  */
 
+#ifndef __ASSEMBLER__
 #include <stdint.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -14,6 +15,7 @@ typedef unsigned int u_int;
 typedef unsigned char u_char;
 typedef unsigned short u_short;
 typedef unsigned long u_long;
+#endif
 
 #if defined(__aarch64__)
 
