@@ -53,7 +53,7 @@ size_t slurp(const char*filename, uint8_t* out, size_t capacity) {
         perror("seek failed: ");
         exit(1);
     }
-    assert(result < capacity);
+    assert(result <= capacity);
     lseek(fd, 0, SEEK_SET);
     while (1) {
         ssize_t count = read(fd, out + pos, capacity - pos);
@@ -109,25 +109,47 @@ const int BYTES_PER_PIXEL=4;
 const int SCALE = 2;
 int main(int argc, char **argv) {
   corelib_set_puts(emu_puts);
+  sdlkeys = (uint8_t*)SDL_GetKeyboardState(0);
+
+  char skipSave = 0;
+
+  if (argc == 0) {
+      puts("usage: main [rom]");
+      return 0;
+  } else if (argc == 1) {
+      printf("usage: %s [rom]\n", argv[0]);
+      return 0;
+  } else if (argc == 2) {
+      // load rom only.
+  } else if (argc == 3) {
+      if (strcmp(argv[2], "runc") == 0) {
+          // skipsave
+          skipSave = 1;
+      } else {
+        // take arg as bios path
+        const char *filename = argv[2];
+        printf("Taking  %s as bios path\n", filename);
+        const int CAP = 0x80000;
+        char* buffer = malloc(CAP);
+        size_t len = slurp(filename, buffer, CAP);
+        if (len == 0 || len != CAP) {
+            puts("Failed to load bios file.");
+            return 1;
+        }
+        copy_bios(buffer, len);
+        free(buffer);
+      }
+  }
+
   uint8_t *buffer = (uint8_t*)malloc(ROM_BUFFER_BYTES);
   size_t bytes_read = slurp(argv[1], buffer, ROM_BUFFER_BYTES);
   printf("read bytes: %lu\n", bytes_read);
   init(buffer, bytes_read);
 
-  int audio_raw_lr = open("audio_raw_lr.bin", 
-          O_CREAT | O_TRUNC | O_WRONLY , 0700);
-  if (audio_raw_lr == -1) {
-      perror("raw open failed.");
-      return 1;
-  }
-
-  sdlkeys = (uint8_t*)SDL_GetKeyboardState(0);
-
-
   char save_file[1024];
   snprintf(save_file, 1023, "%s.sav", argv[1]);
-  if (argc == 3) {
-      printf("skipping load.\n");
+  if (skipSave) {
+      printf("Skipping ubersave load.\n");
   } else {
       printf("Loading %s\n", save_file);
       load_state(save_file);
@@ -193,5 +215,4 @@ int main(int argc, char **argv) {
   }
   printf("save file: %s\n", save_file);
   dump_state(save_file);
-  close(audio_raw_lr);
 }

@@ -64,7 +64,7 @@ static void vout_flip(const void *vram, int vram_offset, int bgr24,
 
     if (vram == NULL)
         return;
-    printf("offset=%d bgr=%d\n", vram_offset, bgr24);
+    // printf("offset=%d bgr=%d\n", vram_offset, bgr24);
 
     // vram_offset = 0;  // prevent y bounce from interlace.
     const uint8_t *src = (const uint8_t *)vram;
@@ -283,6 +283,13 @@ void init(const uint8_t* data, size_t len) {
 
     // examine for audio: retro_set_audio_buff_status_cb();
     // video: retro_get_system_av_info
+}
+
+// Bios may be unloaded via copy_bios(null, 0);
+// Takes effect at next system restart.
+EXPOSE
+void copy_bios(const uint8_t* buffer, size_t len) {
+    psxMemBiosCopy(buffer, len);
 }
 
 EXPOSE
