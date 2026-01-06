@@ -42,6 +42,8 @@ int framerate();
 int width();
 int height();
 
+void set_cachedir(const char* path);
+
 void dump_state(const char* save_path);
 void load_state(const char* save_path);
 // Interface used by app. App closes fd.

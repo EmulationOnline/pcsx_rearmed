@@ -109,6 +109,7 @@ const int BYTES_PER_PIXEL=4;
 const int SCALE = 2;
 int main(int argc, char **argv) {
   corelib_set_puts(emu_puts);
+  set_cachedir(".");
   sdlkeys = (uint8_t*)SDL_GetKeyboardState(0);
 
   char skipSave = 0;

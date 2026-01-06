@@ -58,6 +58,19 @@ int height() {
     return vout_h;
 }
 
+static char emu_tmpfile[128] = ".";
+EXPOSE
+void set_cachedir(const char* path) {
+    if (strlen(path) < sizeof(emu_tmpfile)) {
+        snprintf(emu_tmpfile, sizeof(emu_tmpfile), "%s/a.chd", path);
+        puts("set emu_tmpfile:");
+        puts(emu_tmpfile);
+    } else {
+        puts("unable to set emu_tmpfile");
+        strcpy(emu_tmpfile, "/dev/null");
+    }
+}
+
 static void vout_flip(const void *vram, int vram_offset, int bgr24,
                       int x, int y, int w, int h, int dims_changed) {
     (void)dims_changed;
@@ -141,6 +154,7 @@ struct rearmed_cbs pl_rearmed_cbs = {
 
 #include "plugins/dfsound/out.h"
 
+#define puts(arg) emu_puts_cb(arg)
 static void (*emu_puts_cb)(const char *) = NULL;
 void corelib_set_puts(void (*cb)(const char *)) {
     emu_puts_cb = cb;
@@ -208,8 +222,12 @@ void set_key(size_t key, char val) {
 }
 
 const char* mkfile(const uint8_t* data, size_t bytes) {
-    const char* path = "/data/local/tmp/ps1.chd";
+    const char* path = emu_tmpfile;
     int fd = open(path, O_CREAT | O_TRUNC | O_WRONLY, 0700);
+    if (fd < 0) {
+        puts("open tmp failed.");
+        return path;
+    }
     while (bytes > 0) {
         int written = write(fd, data, bytes);
         if (written <= 0) {
@@ -252,7 +270,8 @@ void init(const uint8_t* data, size_t len) {
     // Set CD image BEFORE LoadPlugins (needed by cdra_open in OpenPlugins)
     puts("Loading cd");
     const char* tmpfile = mkfile(data, len);
-    printf("Generated tmpfile: %s\n", tmpfile);
+    puts("Generated tmpfile.");
+    puts(tmpfile);
     // set_cd_image("demo.chd");
     set_cd_image(tmpfile);
 
