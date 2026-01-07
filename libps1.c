@@ -169,7 +169,7 @@ static int apu_init(void) { return 0; }
 static void apu_finish(void) {}
 static int apu_busy(void) { return 0; }
 static void apu_feed(void *data, int bytes) {
-    printf("got audio: [%d bytes]\n", bytes);
+    // printf("got audio: [%d bytes]\n", bytes);
     int16_t* samples = (int16_t*)data;
     size_t count = bytes / sizeof(int16_t) / 2;
     for (int i = 0; i < count; i++) {
@@ -364,7 +364,7 @@ const uint8_t *framebuffer() {
 
 EXPOSE
 void frame() {
-    puts("frame");
+    // puts("frame");
    psxRegs.stop = 0;
    psxCpu->Execute(&psxRegs);
 }
@@ -571,6 +571,10 @@ void strSaveFuncs(uint8_t* buffer, size_t len) {
 EXPOSE 
 int save_str(uint8_t* dest, int capacity) {
     struct PcsxSaveFuncs oldSaveFuncs = SaveFuncs;
+    if (dest) {
+        memcpy(dest, Mcd1Data, MCD_SIZE); dest += MCD_SIZE; capacity -= MCD_SIZE;
+        memcpy(dest, Mcd2Data, MCD_SIZE); dest += MCD_SIZE; capacity -= MCD_SIZE;
+    }
     strSaveFuncs(dest, capacity);
     struct FileBuffer buf = {
         .buffer = dest,
@@ -581,11 +585,18 @@ int save_str(uint8_t* dest, int capacity) {
     };
     int ret = SaveState((char*)&buf);
     SaveFuncs = oldSaveFuncs;
-    return buf.pos;
+    return buf.pos + 2*MCD_SIZE;
 }
 // Loads len bytes from src
 EXPOSE 
 void load_str(int len, const uint8_t* src) {
+    // mem 1, mem2, then state snapshot
+    if (len < 2*MCD_SIZE) {
+        puts("save is too small to load memcard 1+2");
+        return;
+    }
+    memcpy(Mcd1Data, src, MCD_SIZE); src += MCD_SIZE; len -= MCD_SIZE;
+    memcpy(Mcd2Data, src, MCD_SIZE); src += MCD_SIZE; len -= MCD_SIZE;
     struct PcsxSaveFuncs oldSaveFuncs = SaveFuncs;
     strSaveFuncs(src, len);
     struct FileBuffer buf = {
