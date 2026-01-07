@@ -30,7 +30,7 @@
 #include <stdint.h>
 
 #ifndef PICO_RING_CAPACITY
-#define PICO_RING_CAPACITY 1024
+#define PICO_RING_CAPACITY 44100
 #endif
 
 typedef int16_t RING_T;

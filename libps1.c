@@ -58,7 +58,7 @@ int height() {
     return vout_h;
 }
 
-static char emu_tmpfile[128] = ".";
+static char emu_tmpfile[128] = "";
 EXPOSE
 void set_cachedir(const char* path) {
     if (strlen(path) < sizeof(emu_tmpfile)) {
@@ -169,14 +169,17 @@ static int apu_init(void) { return 0; }
 static void apu_finish(void) {}
 static int apu_busy(void) { return 0; }
 static void apu_feed(void *data, int bytes) {
-    // printf("got audio: [%d bytes]\n", bytes);
+    printf("got audio: [%d bytes]\n", bytes);
     int16_t* samples = (int16_t*)data;
     size_t count = bytes / sizeof(int16_t) / 2;
     for (int i = 0; i < count; i++) {
         // samples[i] = samples[i*2];
         samples[i] = (samples[i*2] + samples[i*2+1]) / 2;
     }
-    ring_push(&ring_, samples, count);
+    size_t written = ring_push(&ring_, samples, count);
+    if (written < count) {
+        printf("wrote only %d / %d samples to ring\n", written, count);
+    }
 }
 
 void out_register_libretro(struct out_driver *drv) {
@@ -223,6 +226,9 @@ void set_key(size_t key, char val) {
 
 const char* mkfile(const uint8_t* data, size_t bytes) {
     const char* path = emu_tmpfile;
+    if (strlen(path) == 0) {
+        set_cachedir(".");
+    }
     int fd = open(path, O_CREAT | O_TRUNC | O_WRONLY, 0700);
     if (fd < 0) {
         puts("open tmp failed.");
@@ -238,6 +244,49 @@ const char* mkfile(const uint8_t* data, size_t bytes) {
     }
     close(fd);
     return path;
+}
+
+extern char Mcd1Data[MCD_SIZE];
+extern char Mcd2Data[MCD_SIZE];
+extern char McdDisable[2];
+void init_memcard(char* memcard) {
+    unsigned off = 0;
+    unsigned i;
+
+    memset(memcard, 0, MCD_SIZE);
+
+    memcard[off++] = 'M';
+    memcard[off++] = 'C';
+    off += 0x7d;
+    memcard[off++] = 0x0e;
+
+    for (i = 0; i < 15; i++) {
+        memcard[off++] = 0xa0;
+        off += 0x07;
+        memcard[off++] = 0xff;
+        memcard[off++] = 0xff;
+        off += 0x75;
+        memcard[off++] = 0xa0;
+    }
+
+    for (i = 0; i < 20; i++) {
+        memcard[off++] = 0xff;
+        memcard[off++] = 0xff;
+        memcard[off++] = 0xff;
+        memcard[off++] = 0xff;
+        off += 0x04;
+        memcard[off++] = 0xff;
+        memcard[off++] = 0xff;
+        off += 0x76;
+    }
+}
+void init_memcards() {
+    snprintf(Config.Mcd1, sizeof(Config.Mcd1), "none");
+    snprintf(Config.Mcd2, sizeof(Config.Mcd2), "none");
+    init_memcard(Mcd1Data);
+    init_memcard(Mcd2Data);
+    McdDisable[0] = 0;
+    McdDisable[1] = 0;
 }
 
 EXPOSE
@@ -275,6 +324,7 @@ void init(const uint8_t* data, size_t len) {
     // set_cd_image("demo.chd");
     set_cd_image(tmpfile);
 
+    init_memcards();
     if (LoadPlugins() == -1) {
         puts("Failed to load plugins.");
         return;
@@ -314,7 +364,7 @@ const uint8_t *framebuffer() {
 
 EXPOSE
 void frame() {
-    // puts("frame");
+    puts("frame");
    psxRegs.stop = 0;
    psxCpu->Execute(&psxRegs);
 }
@@ -554,10 +604,10 @@ EXPOSE
 long apu_sample_variable(int16_t *output, int32_t frames) {
     size_t received = ring_pull(&ring_, output, frames);
     if (received < frames) {
-        // printf("underrun, filling %d - %ld frames\n", frames, received);
-        int16_t last = received > 0 ? output[received-1] : 0;
+        printf("underrun, filling %d - %ld frames\n", frames, received);
+        // int16_t last = received > 0 ? output[received-1] : 0;
         for (int i = received; i < frames; i++) {
-            output[i] = last;
+            output[i] = 0;
         }
     }
     return received;

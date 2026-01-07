@@ -236,11 +236,11 @@ OBJS = $(SRCS:.c=.o) $(SRCS_ASM:.S=.o)
 
 all: $(TARGET) main
 
-$(TARGET): $(OBJS)
+$(TARGET): $(OBJS) corelib.h
 	$(LD) -o $@ -shared -fPIC $(OBJS) $(LDFLAGS) $(LDLIBS)
 	cp $(TARGET) libapu.so
 
-main: $(TARGET) main.c
+main: $(TARGET) main.c corelib.h
 	$(CC) main.c -L. -lps1 -Wl,-rpath=. $(shell pkg-config --cflags --libs sdl2) -o main
 
 # Generic Rule
