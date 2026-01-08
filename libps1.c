@@ -205,8 +205,8 @@ void set_key(size_t key, char val) {
     // most games dont need them.
     uint16_t mask = 0;
     switch (key) {
-        case BTN_B: mask = 1 << DKEY_CROSS; break;
-        case BTN_A: mask = 1 << DKEY_CIRCLE; break;
+        case BTN_A: mask = 1 << DKEY_CROSS; break;
+        case BTN_B: mask = 1 << DKEY_CIRCLE; break;
         case BTN_X: mask = 1 << DKEY_SQUARE; break;
         case BTN_Y: mask = 1 << DKEY_TRIANGLE; break;
         case BTN_Up: mask = 1 << DKEY_UP; break;

@@ -11,8 +11,8 @@ void emu_puts(const char* msg) {
 }
 
 void sdl_update_keys(const uint8_t *sdlkeys) {
-    set_key(BTN_B, sdlkeys[SDL_SCANCODE_C]);      // x
-    set_key(BTN_A, sdlkeys[SDL_SCANCODE_V]);      // circle
+    set_key(BTN_A, sdlkeys[SDL_SCANCODE_C]);      // x
+    set_key(BTN_B, sdlkeys[SDL_SCANCODE_V]);      // circle
     set_key(BTN_X, sdlkeys[SDL_SCANCODE_Z]);      // x
     set_key(BTN_Y, sdlkeys[SDL_SCANCODE_X]);      // x
 
