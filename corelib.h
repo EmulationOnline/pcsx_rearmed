@@ -11,19 +11,19 @@
 
 enum Keys {
     BTN_A = 0,
-    BTN_B,
-    BTN_Sel,
-    BTN_Start,
-    BTN_Up,
-    BTN_Down,
-    BTN_Left,
-    BTN_Right,
-    BTN_L,  // Shoulder buttons
-    BTN_R,
-    BTN_L2,
-    BTN_R2,
-    BTN_X,
-    BTN_Y,
+    BTN_B, // 1
+    BTN_Sel, // 2
+    BTN_Start, // 3
+    BTN_Up, // 4 
+    BTN_Down, // 5
+    BTN_Left, // 6 
+    BTN_Right,  // 7
+    BTN_L,  // Shoulder buttons // 8
+    BTN_R, // 9
+    BTN_L2, // 10
+    BTN_R2, // 11
+    BTN_X, // 12
+    BTN_Y, // 13
     NUM_KEYS
 };
 
