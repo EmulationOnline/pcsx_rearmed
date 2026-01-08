@@ -215,6 +215,11 @@ void set_key(size_t key, char val) {
         case BTN_Right: mask = 1 << DKEY_RIGHT; break;
         case BTN_Start: mask = 1 << DKEY_START; break;
         case BTN_Sel: mask = 1 << DKEY_SELECT; break;
+
+        case BTN_L: mask = 1 << DKEY_L1; break;
+        case BTN_L2: mask = 1 << DKEY_L2; break;
+        case BTN_R: mask = 1 << DKEY_R1; break;
+        case BTN_R2: mask = 1 << DKEY_R2; break;
         default: return;
     }
     if (val) {
