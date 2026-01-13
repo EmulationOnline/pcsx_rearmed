@@ -11,11 +11,9 @@ lib: $(TARGET)
 # CC = cc
 LD = $(CC)
 
-# Global Compiler Flags (from build log)
 override CFLAGS  = '-DGIT_VERSION=" a2640fe1"'
 override CFLAGS += -fPIC
-#override CFLAGS += -fPIC -march=native
-# CFLAGS += -fPIC -mssse3
+
 override CFLAGS += -Wall -Iinclude -ffast-math -O3 -DNDEBUG
 override CFLAGS += -ffunction-sections -fdata-sections
 override CFLAGS += -DP_HAVE_MMAP=1 -DP_HAVE_PTHREAD=1 -DP_HAVE_POSIX_MEMALIGN=1 -DDISABLE_MEM_LUTS=0
@@ -77,10 +75,8 @@ override CFLAGS += -DBUILTIN_GPU=neon
 override CFLAGS += -DNEON_BUILD -DTEXTURE_CACHE_4BPP -DTEXTURE_CACHE_8BPP -DSIMD_BUILD
 override CFLAGS += -DHAVE_RTHREADS
 
-# Strict checking for interface file only
 CFLAGS_LIBPS1 = -Werror=missing-field-initializers
 
-# Specific overrides (will be applied in targets)
 CFLAGS_ZLIB = -Wno-unused -Wno-unused-function -DHAVE_UNISTD_H
 CFLAGS_CHDR = -Wno-unused -Wno-unused-function -Wno-unused -Wno-maybe-uninitialized -std=gnu11 -Ideps/libchdr/deps/lzma-24.05/include -Ideps/libchdr/deps/zstd-1.5.6/lib
 CFLAGS_ZSTD = -Wno-unused -Wno-unused-function -Ideps/libchdr/deps/zstd-1.5.6/lib
@@ -219,7 +215,6 @@ SRCS_LIBRETRO_COMMON = \
 	deps/libretro-common/lists/dir_list.c \
 	deps/libretro-common/file/retro_dirent.c
 
-# Interface Files (SWAP THESE FOR YOUR NEW INTERFACE)
 SRCS_INTERFACE = \
 	frontend/libretro-cdrom.c \
 	libps1.c
