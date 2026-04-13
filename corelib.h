@@ -34,6 +34,7 @@ void corelib_set_puts(void(*cb)(const char*));
 
 void set_key(size_t key, char val);
 void init(const uint8_t* data, size_t len);
+
 void copy_bios(const uint8_t* buffer, size_t len);
 const uint8_t *framebuffer();
 void frame();
@@ -53,6 +54,9 @@ void load(int fd);
 int save_str(uint8_t* dest, int capacity);
 void load_str(int len, const uint8_t* src);
 
+// Simulate power cycle for the current rom. System should continue behaving
+// as though game and memory cards etc are present.
+void powercycle();
 
 // APU
 const int SAMPLE_RATE = 44100;

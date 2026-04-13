@@ -37,6 +37,10 @@ void input() {
         }
     }
   sdl_update_keys(sdlkeys);
+  if (sdlkeys[SDL_SCANCODE_R]) {
+      puts("sending power cycle signal.");
+      powercycle();
+  }
 }
 
 size_t slurp(const char*filename, uint8_t* out, size_t capacity) {

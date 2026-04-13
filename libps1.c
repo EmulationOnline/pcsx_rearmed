@@ -628,3 +628,13 @@ long apu_sample_variable(int16_t *output, int32_t frames) {
     }
     return received;
 }
+
+void powercycle() {
+    puts("Initiating power-cycle");
+    SysReset();
+    if (LoadCdrom() == -1) {
+        puts("LoadCdrom failed.");
+        return;
+    }
+    puts("Loaded cd.");
+}
