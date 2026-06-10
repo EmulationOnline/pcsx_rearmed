@@ -30,6 +30,12 @@
 #include <stdint.h>
 
 #ifndef PICO_RING_CAPACITY
+// 44100 / 4 was the old baseline. some users complained about latency.
+// /10 (4410) lead to echos in frogger on my pixel 5. 
+// /8 too. (5512)
+// 8192 bad
+// /5 also stutters.
+// /4 ok. (11025)
 #define PICO_RING_CAPACITY (44100 / 4)
 #endif
 
